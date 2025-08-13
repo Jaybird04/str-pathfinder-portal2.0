@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STR Pathfinder - Material Participation Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <style>
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #f59e0b, #10b981);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .milestone-animation {
+            animation: celebrate 2s ease-in-out;
+        }
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: #fbbf24; }
+            100% { transform: scale(1); }
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <!-- LOGO PLACEHOLDER - Replace with your logo -->
+                    <div class="logo-placeholder mr-3">SP</div>
+                    <span class="text-xl font-bold text-gray-800">STR Pathfinder</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userEmail" class="text-gray-600"></span>
+                    <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gray-100">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+            <div class="text-center mb-8">
+                <!-- LOGO PLACEHOLDER - Replace with your logo -->
+                <div class="logo-placeholder mx-auto mb-4" style="width: 80px; height: 80px; font-size: 24px;">SP</div>
+                <h2 class="text-3xl font-bold text-gray-900">STR Pathfinder</h2>
+                <p class="text-gray-600 mt-2">Material Participation Tracker</p>
+            </div>
+            <form onsubmit="login(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="loginEmail" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Sign In
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">Demo Credentials:</p>
+                <p class="text-xs text-gray-500">Client: client@demo.com / demo123</p>
+                <p class="text-xs text-gray-500">Admin: admin@strpathfinder.com / admin123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Dashboard -->
+    <div id="clientDashboard" class="hidden">
+        <div class="max-w-7xl mx-auto py-6 px-4">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Material Participation Tracker</h1>
+                <p class="text-gray-600">Track your participation hours to meet the 100-hour requirement</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-500 rounded-md">
+                            <i class="fas fa-clock text-white"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Hours</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalHours">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-500 rounded-md">
+                            <i class="fas fa-target text-white"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Progress</p>
+                            <p class="text-2xl font-bold text-gray-900" id="progressPercent">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-500 rounded-md">
+                            <i class="fas fa-calendar text-white"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Days Left</p>
+                            <p class="text-2xl font-bold text-gray-900" id="daysLeft">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-500 rounded-md">
+                            <i class="fas fa-list text-white"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Activities</p>
+                            <p class="text-2xl font-bold text-gray-900" id="activityCount">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold mb-4">Annual Progress</h3>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Milestones -->
+            <div class="bg-white p-6 rounded-lg shadow mb-8">
+                <h3 class="text-lg font-semibold mb-4">Milestones</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div id="milestone25" class="text-center p-4 border rounded-lg">
+                        <i class="fas fa-medal text-gray-400 text-2xl mb-2"></i>
+                        <p class="font-medium">25 Hours</p>
+                        <p class="text-sm text-gray-500">Quarter Way</p>
+                    </div>
+                    <div id="milestone50" class="text-center p-4 border rounded-lg">
+                        <i class="fas fa-trophy text-gray-400 text-2xl mb-2"></i>
+                        <p class="font-medium">50 Hours</p>
+                        <p class="text-sm text-gray-500">Halfway</p>
+                    </div>
+                    <div id="milestone75" class="text-center p-4 border rounded-lg">
+                        <i class="fas fa-star text-gray-400 text-2xl mb-2"></i>
+                        <p class="font-medium">75 Hours</p>
+                        <p class="text-sm text-gray-500">Three Quarters</p>
+                    </div>
+                    <div id="milestone100" class="text-center p-4 border rounded-lg">
+                        <i class="fas fa-crown text-gray-400 text-2xl mb-2"></i>
+                        <p class="font-medium">100 Hours</p>
+                        <p class="text-sm text-gray-500">Complete!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="border-b border-gray-200">
+                    <nav class="flex">
+                        <button onclick="showTab('myActivities')" class="tab-button active py-4 px-6 border-b-2 border-blue-500 font-medium text-blue-600">
+                            My Activities
+                        </button>
+                        <button onclick="showTab('teamActivities')" class="tab-button py-4 px-6 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
+                            Team Activities
+                        </button>
+                        <button onclick="showTab('templates')" class="tab-button py-4 px-6 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
+                            Templates
+                        </button>
+                        <button onclick="showTab('ideas')" class="tab-button py-4 px-6 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
+                            Activity Ideas
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- My Activities Tab -->
+                <div id="myActivities" class="tab-content p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">My Participation Activities</h3>
+                        <div class="flex space-x-2">
+                            <button onclick="exportPDF()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                                <i class="fas fa-download"></i> Export PDF
+                            </button>
+                            <button onclick="showAddActivity()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                                <i class="fas fa-plus"></i> Add Activity
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="activitiesList" class="space-y-4">
+                        <!-- Activities will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Team Activities Tab -->
+                <div id="teamActivities" class="tab-content p-6 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold">Team Member Activities</h3>
+                        <button onclick="showAddTeamActivity()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus"></i> Add Team Activity
+                        </button>
+                    </div>
+                    <p class="text-gray-600 mb-4">Track activities performed by contractors, employees, or other helpers (not spouse)</p>
+                    
+                    <div id="teamActivitiesList" class="space-y-4">
+                        <!-- Team activities will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Templates Tab -->
+                <div id="templates" class="tab-content p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4">Activity Templates</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Guest Check-in', 0.5)">
+                            <i class="fas fa-door-open text-blue-500 mb-2"></i>
+                            <h4 class="font-medium">Guest Check-in</h4>
+                            <p class="text-sm text-gray-600">Welcome guests, provide keys and instructions</p>
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mt-2 inline-block">30 mins</span>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Property Inspection', 1)">
+                            <i class="fas fa-search text-green-500 mb-2"></i>
+                            <h4 class="font-medium">Property Inspection</h4>
+                            <p class="text-sm text-gray-600">Walk-through and condition assessment</p>
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-2 inline-block">1 hour</span>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Guest Communication', 0.25)">
+                            <i class="fas fa-comments text-purple-500 mb-2"></i>
+                            <h4 class="font-medium">Guest Communication</h4>
+                            <p class="text-sm text-gray-600">Respond to guest questions and requests</p>
+                            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded mt-2 inline-block">15 mins</span>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Maintenance Coordination', 1.5)">
+                            <i class="fas fa-tools text-yellow-500 mb-2"></i>
+                            <h4 class="font-medium">Maintenance Coordination</h4>
+                            <p class="text-sm text-gray-600">Schedule and oversee repairs</p>
+                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded mt-2 inline-block">1.5 hours</span>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Listing Management', 2)">
+                            <i class="fas fa-laptop text-red-500 mb-2"></i>
+                            <h4 class="font-medium">Listing Management</h4>
+                            <p class="text-sm text-gray-600">Update photos, pricing, and descriptions</p>
+                            <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded mt-2 inline-block">2 hours</span>
+                        </div>
+                        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="useTemplate('Financial Records', 1)">
+                            <i class="fas fa-calculator text-indigo-500 mb-2"></i>
+                            <h4 class="font-medium">Financial Records</h4>
+                            <p class="text-sm text-gray-600">Bookkeeping and expense tracking</p>
+                            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded mt-2 inline-block">1 hour</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Ideas Tab -->
+                <div id="ideas" class="tab-content p-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4">100+ Activity Ideas</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-medium text-green-600 mb-3">Property Management (2-5 hours each)</h4>
+                            <ul class="space-y-1 text-sm text-gray-600">
+                                <li>• Property walk-through inspections</li>
+                                <li>• Coordinate cleaning between guests</li>
+                                <li>• Inventory management and restocking</li>
+                                <li>• Safety equipment checks</li>
+                                <li>• Landscaping oversight</li>
+                                <li>• Utility management and meter readings</li>
+                                <li>• Property photography updates</li>
+                                <li>• Seasonal preparation tasks</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-blue-600 mb-3">Guest Relations (1-3 hours each)</h4>
+                            <ul class="space-y-1 text-sm text-gray-600">
+                                <li>• Pre-arrival guest communication</li>
+                                <li>• Check-in process and property tour</li>
+                                <li>• During-stay guest support</li>
+                                <li>• Check-out process and inspection</li>
+                                <li>• Guest feedback collection</li>
+                                <li>• Issue resolution and problem-solving</li>
+                                <li>• Local recommendations research</li>
+                                <li>• Review response management</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-purple-600 mb-3">Marketing & Operations (3-6 hours each)</h4>
+                            <ul class="space-y-1 text-sm text-gray-600">
+                                <li>• Listing optimization and updates</li>
+                                <li>• Pricing strategy research</li>
+                                <li>• Competitive market analysis</li>
+                                <li>• Social media content creation</li>
+                                <li>• Professional photography sessions</li>
+                                <li>• Calendar management</li>
+                                <li>• Platform performance analysis</li>
+                                <li>• SEO optimization for listings</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-yellow-600 mb-3">Administrative Tasks (1-4 hours each)</h4>
+                            <ul class="space-y-1 text-sm text-gray-600">
+                                <li>• Financial record keeping</li>
+                                <li>• Tax document preparation</li>
+                                <li>• Insurance policy management</li>
+                                <li>• Legal compliance research</li>
+                                <li>• Permit and licensing updates</li>
+                                <li>• Vendor coordination and payments</li>
+                                <li>• Business planning and strategy</li>
+                                <li>• Performance reporting</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-medium text-blue-800 mb-2">💡 Pro Tips for Reaching 100 Hours:</h4>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li>• Document everything - even 15-minute tasks add up</li>
+                            <li>• Include travel time to and from the property</li>
+                            <li>• Track research time for improvements and market analysis</li>
+                            <li>• Count time spent learning STR best practices</li>
+                            <li>• Include spouse activities in your main log</li>
+                            <li>• Regular maintenance checks count as material participation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden">
+        <div class="max-w-7xl mx-auto py-6 px-4">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p class="text-gray-600">Manage STR Pathfinder clients</p>
+            </div>
+
+            <!-- Admin Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">Total Clients</h3>
+                    <p class="text-3xl font-bold text-blue-600" id="totalClients">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">Compliant Clients</h3>
+                    <p class="text-3xl font-bold text-green-600" id="compliantClients">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-900">Need Attention</h3>
+                    <p class="text-3xl font-bold text-red-600" id="needAttention">0</p>
+                </div>
+            </div>
+
+            <!-- Client Management -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">Client Management</h3>
+                        <button onclick="showAddClient()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus"></i> Add Client
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="clientsList" class="space-y-4">
+                        <!-- Clients will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div id="addActivityModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Add Activity</h3>
+            <form onsubmit="addActivity(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                    <input type="date" id="activityDate" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                    <select id="activityType" required class="w-full px-3 py-2 border rounded-lg">
+                        <option value="">Select activity type</option>
+                        <option value="Property Management">Property Management</option>
+                        <option value="Guest Relations">Guest Relations</option>
+                        <option value="Marketing">Marketing & Advertising</option>
+                        <option value="Maintenance">Maintenance & Repairs</option>
+                        <option value="Financial">Financial Management</option>
+                        <option value="Administrative">Administrative</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="activityDescription" required class="w-full px-3 py-2 border rounded-lg" rows="3"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (hours)</label>
+                    <input type="number" id="activityDuration" step="0.25" min="0.25" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('addActivityModal')" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Add Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div id="addClientModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Add New Client</h3>
+            <form onsubmit="addClient(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                    <input type="text" id="clientFirstName" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <input type="text" id="clientLastName" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="clientEmail" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('addClientModal')" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Add Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentUser = null;
+        let activities = JSON.parse(localStorage.getItem('activities') || '[]');
+        let teamActivities = JSON.parse(localStorage.getItem('teamActivities') || '[]');
+        let clients = JSON.parse(localStorage.getItem('clients') || '[]');
+        let progressChart = null;
+
+        // Demo users
+        const users = {
+            'client@demo.com': { password: 'demo123', role: 'client', name: 'Demo Client' },
+            'admin@strpathfinder.com': { password: 'admin123', role: 'admin', name: 'Admin User' }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDaysLeft();
+            initializeChart();
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('activityDate').value = today;
+        });
+
+        // Authentication
+        function login(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (users[email] && users[email].password === password) {
+                currentUser = { email, ...users[email] };
+                document.getElementById('userEmail').textContent = email;
+                showDashboard(currentUser.role);
+            } else {
+                alert('Invalid credentials');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('clientDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function showDashboard(role) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            
+            if (role === 'admin') {
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                document.getElementById('clientDashboard').classList.remove('hidden');
+                loadClientData();
+            }
+        }
+
+        // Client Dashboard Functions
+        function loadClientData() {
+            updateStats();
+            loadActivities();
+            loadTeamActivities();
+            updateChart();
+            checkMilestones();
+        }
+
+        function updateStats() {
+            const totalHours = activities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0);
+            const teamHours = teamActivities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0);
+            const combinedHours = totalHours + teamHours;
+            
+            document.getElementById('totalHours').textContent = combinedHours.toFixed(1);
+            document.getElementById('progressPercent').textContent = Math.round((combinedHours / 100) * 100) + '%';
+            document.getElementById('activityCount').textContent = activities.length + teamActivities.length;
+        }
+
+        function updateDaysLeft() {
+            const now = new Date();
+            const endOfYear = new Date(now.getFullYear(), 11, 31); // December 31st
+            const timeDiff = endOfYear.getTime() - now.getTime();
+            const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            document.getElementById('daysLeft').textContent = daysLeft;
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Cumulative Hours',
+                        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            const monthlyData = new Array(12).fill(0);
+            const allActivities = [...activities, ...teamActivities];
+            
+            allActivities.forEach(activity => {
+                const date = new Date(activity.date);
+                const month = date.getMonth();
+                monthlyData[month] += parseFloat(activity.duration);
+            });
+            
+            // Convert to cumulative
+            for (let i = 1; i < monthlyData.length; i++) {
+                monthlyData[i] += monthlyData[i - 1];
+            }
+            
+            progressChart.data.datasets[0].data = monthlyData;
+            progressChart.update();
+        }
+
+        function checkMilestones() {
+            const totalHours = activities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0) +
+                              teamActivities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0);
+            
+            const milestones = [25, 50, 75, 100];
+            milestones.forEach(milestone => {
+                const element = document.getElementById(`milestone${milestone}`);
+                if (totalHours >= milestone) {
+                    element.classList.add('bg-green-100', 'border-green-500');
+                    element.querySelector('i').classList.remove('text-gray-400');
+                    element.querySelector('i').classList.add('text-green-500');
+                    
+                    // Animate if just reached
+                    const lastTotal = parseFloat(localStorage.getItem('lastTotalHours') || '0');
+                    if (lastTotal < milestone && totalHours >= milestone) {
+                        element.classList.add('milestone-animation');
+                        setTimeout(() => element.classList.remove('milestone-animation'), 2000);
+                    }
+                }
+            });
+            
+            localStorage.setItem('lastTotalHours', totalHours.toString());
+        }
+
+        function loadActivities() {
+            const container = document.getElementById('activitiesList');
+            if (activities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No activities logged yet. Add your first activity!</p>';
+                return;
+            }
+            
+            container.innerHTML = activities.map(activity => `
+                <div class="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">${activity.type}</span>
+                            <span class="text-sm text-gray-500">${new Date(activity.date).toLocaleDateString()}</span>
+                        </div>
+                        <p class="font-medium mt-1">${activity.description}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-blue-600">${activity.duration}h</span>
+                        <button onclick="deleteActivity(${activity.id})" class="ml-2 text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadTeamActivities() {
+            const container = document.getElementById('teamActivitiesList');
+            if (teamActivities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No team activities logged yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = teamActivities.map(activity => `
+                <div class="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">${activity.type}</span>
+                            <span class="text-sm text-gray-500">${new Date(activity.date).toLocaleDateString()}</span>
+                        </div>
+                        <p class="font-medium mt-1">${activity.description}</p>
+                        <p class="text-sm text-gray-600">By: ${activity.teamMember || 'Team Member'}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-purple-600">${activity.duration}h</span>
+                        <button onclick="deleteTeamActivity(${activity.id})" class="ml-2 text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Tab Functions
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                button.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.remove('hidden');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+        }
+
+        // Activity Functions
+        function showAddActivity() {
+            document.getElementById('addActivityModal').classList.remove('hidden');
+        }
+
+        function showAddTeamActivity() {
+            // Reuse the same modal but modify for team activities
+            const modal = document.getElementById('addActivityModal');
+            modal.classList.remove('hidden');
+            modal.querySelector('h3').textContent = 'Add Team Activity';
+            
+            // Add team member field if not exists
+            if (!document.getElementById('teamMemberField')) {
+                const form = modal.querySelector('form');
+                const teamMemberDiv = document.createElement('div');
+                teamMemberDiv.id = 'teamMemberField';
+                teamMemberDiv.className = 'mb-4';
+                teamMemberDiv.innerHTML = `
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Team Member</label>
+                    <input type="text" id="teamMemberName" placeholder="Contractor, Employee, etc." class="w-full px-3 py-2 border rounded-lg">
+                `;
+                form.insertBefore(teamMemberDiv, form.querySelector('.flex'));
+            }
+        }
+
+        function addActivity(event) {
+            event.preventDefault();
+            
+            const isTeamActivity = document.getElementById('teamMemberField') !== null;
+            
+            const activity = {
+                id: Date.now(),
+                date: document.getElementById('activityDate').value,
+                type: document.getElementById('activityType').value,
+                description: document.getElementById('activityDescription').value,
+                duration: parseFloat(document.getElementById('activityDuration').value),
+                teamMember: isTeamActivity ? document.getElementById('teamMemberName')?.value : null
+            };
+            
+            if (isTeamActivity) {
+                teamActivities.push(activity);
+                localStorage.setItem('teamActivities', JSON.stringify(teamActivities));
+                loadTeamActivities();
+                
+                // Clean up team member field
+                document.getElementById('teamMemberField').remove();
+                document.querySelector('#addActivityModal h3').textContent = 'Add Activity';
+            } else {
+                activities.push(activity);
+                localStorage.setItem('activities', JSON.stringify(activities));
+                loadActivities();
+            }
+            
+            updateStats();
+            updateChart();
+            checkMilestones();
+            closeModal('addActivityModal');
+            
+            // Reset form
+            event.target.reset();
+            document.getElementById('activityDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        function deleteActivity(id) {
+            if (confirm('Are you sure you want to delete this activity?')) {
+                activities = activities.filter(activity => activity.id !== id);
+                localStorage.setItem('activities', JSON.stringify(activities));
+                loadActivities();
+                updateStats();
+                updateChart();
+                checkMilestones();
+            }
+        }
+
+        function deleteTeamActivity(id) {
+            if (confirm('Are you sure you want to delete this team activity?')) {
+                teamActivities = teamActivities.filter(activity => activity.id !== id);
+                localStorage.setItem('teamActivities', JSON.stringify(teamActivities));
+                loadTeamActivities();
+                updateStats();
+                updateChart();
+                checkMilestones();
+            }
+        }
+
+        function useTemplate(type, duration) {
+            document.getElementById('activityType').value = getActivityCategory(type);
+            document.getElementById('activityDescription').value = type;
+            document.getElementById('activityDuration').value = duration;
+            showAddActivity();
+        }
+
+        function getActivityCategory(activityType) {
+            const mapping = {
+                'Guest Check-in': 'Guest Relations',
+                'Property Inspection': 'Property Management',
+                'Guest Communication': 'Guest Relations',
+                'Maintenance Coordination': 'Maintenance',
+                'Listing Management': 'Marketing',
+                'Financial Records': 'Financial'
+            };
+            return mapping[activityType] || 'Property Management';
+        }
+
+        // Export Functions
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFontSize(20);
+            doc.text('STR Material Participation Report', 20, 30);
+            
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 45);
+            doc.text(`Client: ${currentUser.email}`, 20, 55);
+            
+            // Summary
+            const totalHours = activities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0) +
+                              teamActivities.reduce((sum, activity) => sum + parseFloat(activity.duration), 0);
+            
+            doc.text(`Total Hours: ${totalHours.toFixed(1)} / 100`, 20, 75);
+            doc.text(`Progress: ${Math.round((totalHours / 100) * 100)}%`, 20, 85);
+            doc.text(`Activities Logged: ${activities.length + teamActivities.length}`, 20, 95);
+            
+            // Activities
+            let yPos = 115;
+            doc.setFontSize(14);
+            doc.text('My Activities:', 20, yPos);
+            yPos += 15;
+            
+            doc.setFontSize(10);
+            activities.forEach(activity => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                doc.text(`${activity.date} | ${activity.type} | ${activity.duration}h`, 25, yPos);
+                yPos += 10;
+                doc.text(`${activity.description}`, 25, yPos);
+                yPos += 15;
+            });
+            
+            if (teamActivities.length > 0) {
+                yPos += 10;
+                doc.setFontSize(14);
+                doc.text('Team Activities:', 20, yPos);
+                yPos += 15;
+                
+                doc.setFontSize(10);
+                teamActivities.forEach(activity => {
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 30;
+                    }
+                    doc.text(`${activity.date} | ${activity.type} | ${activity.duration}h | ${activity.teamMember || 'Team'}`, 25, yPos);
+                    yPos += 10;
+                    doc.text(`${activity.description}`, 25, yPos);
+                    yPos += 15;
+                });
+            }
+            
+            doc.save('str-participation-report.pdf');
+        }
+
+        // Admin Functions
+        function loadAdminData() {
+            updateAdminStats();
+            loadClientsList();
+        }
+
+        function updateAdminStats() {
+            document.getElementById('totalClients').textContent = clients.length;
+            // For demo purposes, using static numbers
+            document.getElementById('compliantClients').textContent = Math.floor(clients.length * 0.7);
+            document.getElementById('needAttention').textContent = Math.ceil(clients.length * 0.3);
+        }
+
+        function loadClientsList() {
+            const container = document.getElementById('clientsList');
+            if (clients.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No clients added yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = clients.map(client => `
+                <div class="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium">${client.firstName} ${client.lastName}</h4>
+                        <p class="text-gray-600">${client.email}</p>
+                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">Active</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="deleteClient(${client.id})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddClient() {
+            document.getElementById('addClientModal').classList.remove('hidden');
+        }
+
+        function addClient(event) {
+            event.preventDefault();
+            
+            const client = {
+                id: Date.now(),
+                firstName: document.getElementById('clientFirstName').value,
+                lastName: document.getElementById('clientLastName').value,
+                email: document.getElementById('clientEmail').value,
+                status: 'pending-setup'
+            };
+            
+            clients.push(client);
+            localStorage.setItem('clients', JSON.stringify(clients));
+            
+            loadClientsList();
+            updateAdminStats();
+            closeModal('addClientModal');
+            
+            event.target.reset();
+            
+            alert(`Invitation sent to ${client.email}. They can now create their account.`);
+        }
+
+        function deleteClient(id) {
+            if (confirm('Are you sure you want to delete this client?')) {
+                clients = clients.filter(client => client.id !== id);
+                localStorage.setItem('clients', JSON.stringify(clients));
+                loadClientsList();
+                updateAdminStats();
+            }
+        }
+
+        // Modal Functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDs5N%2BEz4Wd8%2BO9P0BfkpXO8P3M8H1Ch284FLukllXt3DsGKNndbAAghbH5ni2UL1JglK66cgGeT2z1K7cIPofpYX8421SlyAfvYDQMSfwliqa1CXNnou85EDygwtDPMgwKwwKz%2BAO%2B64bj7h2XMQ%2BV24TAU8Yg7TAb64Htrv6od2MT8GsdV2ZszxsjBmpjTUOU7K6sg6oaPqmH8akIbWMArDfbYJUBAq5afVG56mMr2Qq69Hugcqt32B%2FQTYa3h1gS6k22oaUbSQCSu8qV9viHrV6AQRhNaw3JX2EGlA%2F5jadaKq8thgiSjPX2hwkLXRD9Y06vwmpHHcyR2jvS46T%2BW6aGBhlOztSPJc6qBpDbq4H8XbhJoeE8b49mvX%2BKi%2FdB7E58XdCghmWm%2BH%2Ba0sttLrUHnQW2HiWTYWznd497n1eT16iokCU45tqQiMzZZG0vdxUEoVI3KJVoPBglZtMK3nfcm0%2FGmjQ1sDb7O9Y0mhZ5SllgwVpSVezu%2Fv4e0NuA%3D%3D";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDs5N+Ez4Wd8+O9P0BfkpXO8P3M8H1Ch284FLukllXt3DsGKNndbAAghbH5ni2UL1JglK66cgGeT2z1K7cIPofpYX8421SlyAfvYDQMSfwliqa1CXNnou85EDygwtDPMgwKwwKz+AO+64bj7h2XMQ+V24TAU8Yg7TAb64Htrv6od2MT8GsdV2ZszxsjBmpjTUOU7K6sg6oaPqmH8akIbWMArDfbYJUBAq5afVG56mMr2Qq69Hugcqt32B/QTYa3h1gS6k22oaUbSQCSu8qV9viHrV6AQRhNaw3JX2EGlA/5jadaKq8thgiSjPX2hwkLXRD9Y06vwmpHHcyR2jvS46T+W6aGBhlOztSPJc6qBpDbq4H8XbhJoeE8b49mvX+Ki/dB7E58XdCghmWm+H+a0sttLrUHnQW2HiWTYWznd497n1eT16iokCU45tqQiMzZZG0vdxUEoVI3KJVoPBglZtMK3nfcm0/GmjQ1sDb7O9Y0mhZ5SllgwVpSVezu/v4e0NuA==";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
